@@ -29,24 +29,22 @@ HOST = os.environ.get('HOST') or 'localhost'
 def main(args: argparse.Namespace) -> int:
     configure(os.getenv('FLASK_CONFIG') or 'default')
 
+    status = True
     if args.test is True:
         pid = os.fork()
         if pid == 0:
-            run_server(mode='debug')
-            return True
+            status = run_server(mode='debug')
         else:
-            result = False
             try:
-                result = pytest.main(['tests'])
+                status = pytest.main(['tests'])
             except:  # trust me this is ok
                 pass
             os.kill(pid, signal.SIGINT)
-            return result
     elif (args is not None) and (args.debug or app.debug):
-        run_server(mode='debug')
+        status = run_server(mode='debug')
     else:
-        run_server(mode='prod')
-    return True
+        status = run_server(mode='prod')
+    return status
 
 
 def run_server(mode: Optional[str]='debug') -> None:
@@ -82,7 +80,7 @@ def run_server(mode: Optional[str]='debug') -> None:
             os.system(f'gunicorn -b :{PORT} application:app')
 
 
-def get_args():
+def get_args() -> argparse.Namespace:
     """
     Get command line arguments
     :return: arguments
